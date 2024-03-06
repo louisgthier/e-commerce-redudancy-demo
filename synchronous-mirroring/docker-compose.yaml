@@ -1,0 +1,42 @@
+version: "3.8"
+services:
+  frontend:
+    image: ecommerce-frontend
+    build: ./frontend
+    ports:
+      - "3000:80"
+    networks:
+      - ecommerce-network
+  backend:
+    image: ecommerce-backend
+    build: ./backend
+    ports:
+      - "3001:3001"
+    environment:
+      FLASK_ENV: development
+    depends_on:
+      - db1
+      - db2
+    networks:
+      - ecommerce-network
+  dns:
+    image: ecommerce-dns
+    build: ./dns
+    ports:
+      - "3002:3002"
+    networks:
+      - ecommerce-network
+  db1:
+    image: ecommerce-db
+    build: ./db
+    networks:
+      - ecommerce-network
+  db2:
+    image: ecommerce-db
+    build: ./db
+    networks:
+      - ecommerce-network
+
+networks:
+  ecommerce-network:
+    driver: bridge

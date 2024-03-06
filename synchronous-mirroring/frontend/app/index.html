@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Ecommerce Home</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <link rel="shortcut icon" href="/favicon.ico">
+        <style>
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 50vh;
+            }
+
+            .container {
+                text-align: center;
+            }
+        </style>
+    </head>
+<body>
+    <div class="container mt-5">
+        <h1>Welcome to Our Ecommerce Platform!</h1>
+        <div class="mt-4" id="links">
+            <!-- Links will be inserted here by JS -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('http://localhost:3002/getServer')
+                .then(response => response.json())
+                .then(data => {
+                    const baseUrl = data.server; // Assuming the response contains the URL of the backend
+
+                    // Example of fetching products and dynamically creating a link
+                    fetch(`${baseUrl}/api/products`)
+                        .then(response => response.json())
+                        .then(products => {
+                            const linksContainer = document.getElementById('links');
+                            const productsLink = document.createElement('a');
+                            productsLink.href = '/products.html'; // You can update this to link to your frontend route/page that displays products
+                            productsLink.className = 'btn btn-primary';
+                            productsLink.innerText = 'View Products';
+                            linksContainer.appendChild(productsLink);
+
+                            // Similarly, you can add more links or data fetched from your API
+                        });
+                });
+        });
+    </script>
+</body>
+</html>
