@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import psycopg2
+import threading
+import time
 
 # Assuming DB connection details are correct
 
@@ -14,16 +16,43 @@ for i in range(1, 3):
 
 db_cursors = [db_connection.cursor() for db_connection in db_connections]
 
-def execute_query(query, params=None, commit=False):
-    for cursor in db_cursors:
+def replicate_to_secondary(query, params=None):
+    for cursor in db_cursors[1:]:  # Exclude the first cursor, which is for the primary DB
         try:
             cursor.execute(query, params)
         except psycopg2.InterfaceError:
-            print("Error: Lost connection to database")
-            return
-    if commit:
-        for connection in db_connections:
-            connection.commit()
+            print("Error: Lost connection to secondary database")
+
+def execute_query(query, params=None, commit=False):
+    primary_cursor = db_cursors[0]  # Primary database cursor
+    try:
+        primary_cursor.execute(query, params)
+        if commit:
+            db_connections[0].commit()  # Commit on primary DB
+            # Replicate asynchronously to secondary DBs
+            replication_thread = threading.Thread(target=replicate_to_secondary, args=(query, params))
+            replication_thread.start()
+    except psycopg2.InterfaceError:
+        print("Error: Lost connection to primary database")
+
+# Commit on secondary DBs every 10 seconds
+def commit_to_secondary():
+    while True:
+        for connection in db_connections[1:]:
+            try:
+                connection.commit()
+                print("Committed to secondary database")
+            except psycopg2.InterfaceError:
+                print("Error: Lost connection to secondary database")
+            except Exception as e:
+                print(f"Error: {e}")
+        print("Sleeping for 10 seconds")
+        time.sleep(10)
+        print("Woke up")
+
+commit_thread = threading.Thread(target=commit_to_secondary)
+commit_thread.start()
+
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS if your frontend is served from a different origin
